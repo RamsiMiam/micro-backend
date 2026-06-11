@@ -1,13 +1,18 @@
-use axum::Json;
+use axum::{
+    extract::State,
+    Json,
+};
 
-use crate::models::robot_state::RobotState;
+use crate::{
+    models::robot_state::RobotState,
+    state::SharedRobotState,
+};
 
-pub async fn status() -> Json<RobotState> {
-    Json(RobotState {
-        id: "30AEA4FF0601".to_string(),
-        x: 1.0,
-        y: 2.0,
-        theta: 0.5,
-        motor_velocities: [0.5, 0.5, 0.5, 0.5],
-    })
+pub async fn status(
+    State(state): State<SharedRobotState>,
+) -> Json<RobotState> {
+
+    let robot = state.read().await;
+
+    Json(robot.clone())
 }
