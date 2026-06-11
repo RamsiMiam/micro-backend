@@ -1,27 +1,32 @@
 mod api;
 mod models;
+mod mqtt;
 mod state;
 
+use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+
+use dotenvy::dotenv;
+use std::env;
 
 use api::router::create_router;
-use models::robot_state::RobotState;
-use state::SharedRobotState;
-use tokio::sync::RwLock;
+use state::SharedRobots;
 
 #[tokio::main]
 async fn main() {
-    let robot_state: SharedRobotState = Arc::new(RwLock::new(RobotState::new(
-        "30AEA4FF0601".to_string(),
-        1.0,
-        2.0,
-        0.5,
-        [1.5; 4],
-    )));
-    let app = create_router()
-        .with_state(robot_state);
+    dotenv().ok();
+    
+    let robots: SharedRobots = Arc::new(RwLock::new(HashMap::new()));
+
+    let mqtt_state = robots.clone();
+    let app = create_router().with_state(robots);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
+    tokio::spawn(async move {
+        mqtt::client::mqtt_task(mqtt_state).await;
+    });
 
     axum::serve(listener, app).await.unwrap();
 }

@@ -3,11 +3,11 @@ use axum::{
     Router,
 };
 
-use crate::state::SharedRobotState;
+use crate::state::SharedRobots;
 
-use super::status::status;
+use super::robots::robots;
 
-pub fn create_router() -> Router<SharedRobotState> {
+pub fn create_router() -> Router<SharedRobots> {
     Router::new()
-        .route("/status", get(status))
+        .route("/robots", get(robots))
 }
