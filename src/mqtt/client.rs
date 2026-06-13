@@ -5,25 +5,24 @@ use std::env;
 
 use crate::{models::robot_state::RobotState, state::SharedRobots};
 
-pub async fn mqtt_task(state: SharedRobots) {
+pub fn create_mqtt_client() -> (AsyncClient, rumqttc::EventLoop) {
     let host = env::var("MQTT_HOST").unwrap_or("localhost".to_string());
     let port: u16 = env::var("MQTT_PORT")
         .unwrap_or("1883".to_string())
         .parse()
         .unwrap();
-
     let user = env::var("MQTT_USER").unwrap();
     let pass = env::var("MQTT_PASS").unwrap();
-
     let client_id = env::var("MQTT_CLIENT_ID").unwrap_or("micro_backend".to_string());
 
     let mut mqttoptions = MqttOptions::new(client_id, host, port);
     mqttoptions.set_credentials(user, pass);
-
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
-    let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
+    AsyncClient::new(mqttoptions, 10)
+}
 
+pub async fn mqtt_task(client: AsyncClient, mut eventloop: rumqttc::EventLoop, state: SharedRobots) {
     client.subscribe("robot/#", QoS::AtMostOnce).await.unwrap();
 
     println!("MQTT connected");
@@ -40,7 +39,7 @@ pub async fn mqtt_task(state: SharedRobots) {
                     let parts: Vec<&str> = p.topic.split('/').collect();
                     if parts.len() < 4 {
                         println!("Invalid topic format");
-                        return;
+                        continue;
                     }
 
                     let mac = parts[1];
