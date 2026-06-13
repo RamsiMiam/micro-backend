@@ -1,13 +1,14 @@
 use axum::{
-    routing::get,
     Router,
+    routing::{get, post},
 };
+use crate::state::AppState;
 
-use crate::state::SharedRobotState;
+use super::robots::{robots, start_robot, stop_robot};
 
-use super::status::status;
-
-pub fn create_router() -> Router<SharedRobotState> {
+pub fn create_router() -> Router<AppState> {
     Router::new()
-        .route("/status", get(status))
+        .route("/robots", get(robots))
+        .route("/robots/{robot_id}/start", post(start_robot))
+        .route("/robots/{robot_id}/stop", post(stop_robot))
 }
